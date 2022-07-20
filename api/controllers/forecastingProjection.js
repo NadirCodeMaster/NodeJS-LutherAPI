@@ -1,0 +1,111 @@
+const { ObjectId } = require('mongodb');
+const ForecastingProjection = require('../models/forecastingProjection');
+
+const get = (req, res) => {
+  const id = req.swagger.params.id.value;
+
+  if (ObjectId.isValid(id)) {
+    ForecastingProjection.findById(id).then(result => {
+      if (result) {
+        res.json(result);
+      } else {
+        res.status(404);
+        res.json({ message: 'No exist!' });
+      }
+    });
+  } else {
+    res.status(409);
+    res.json({ message: 'Invalid id!' });
+  }
+};
+
+const list = (req, res) => {
+  ForecastingProjection.find().then(list => res.json(list));
+};
+
+const add = (req, res) => {
+  const data = req.swagger.params.body.value;
+  const forecastingId = data.forecasting_id;
+
+  if (ObjectId.isValid(forecastingId)) {
+    const forecastingProjection = new ForecastingProjection({
+      ...data,
+      date: new Date(data.date),
+      forecasting_id: ObjectId(forecastingId),
+      date_created: new Date()
+    });
+
+    forecastingProjection
+      .save()
+      .then(saved => res.json(saved))
+      .catch(e => {
+        res.json(e);
+      });
+  } else {
+    res.status(409);
+    res.json({ message: 'Invalid forecasting id!' });
+  }
+};
+
+const update = (req, res) => {
+  const id = req.swagger.params.id.value;
+  const data = req.swagger.params.body.value;
+
+  if (ObjectId.isValid(id)) {
+    const forecastingId = data.forecasting_id;
+
+    if (ObjectId.isValid(forecastingId)) {
+      data.forecasting_id = ObjectId(forecastingId);
+      data.date = new Date(data.date);
+
+      ForecastingProjection.findOneAndUpdate(
+        { _id: ObjectId(id) },
+        { $set: data },
+        { returnOriginal: false },
+        (err, result) => {
+          if (err) {
+            res.status(400);
+            res.json({ message: 'Error!' });
+          } else if (result) {
+            res.json(result);
+          } else {
+            res.status(404);
+            res.json({ message: 'No exist!' });
+          }
+        }
+      );
+    } else {
+      res.status(409);
+      res.json({ message: 'Invalid Forecasting id!' });
+    }
+  } else {
+    res.status(409);
+    res.json({ message: 'Invalid id!' });
+  }
+};
+
+const remove = (req, res) => {
+  const id = req.swagger.params.id.value;
+
+  if (ObjectId.isValid(id)) {
+    ForecastingProjection.deleteOne({ _id: ObjectId(id) }).then(result => {
+      if (result) {
+        res.json(result);
+      } else {
+        res.status(404);
+        res.json({ message: 'No exist!' });
+      }
+    });
+  } else {
+    res.status(409);
+    res.json({ message: 'Invalid id!' });
+  }
+};
+
+module.exports = {
+  get,
+  list,
+  add,
+  update,
+  remove
+};
